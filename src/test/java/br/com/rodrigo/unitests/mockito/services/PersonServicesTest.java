@@ -17,9 +17,11 @@ import br.com.rodrigo.repositories.PersonRepository;
 import br.com.rodrigo.services.PersonServices;
 import br.com.rodrigo.unittests.mapper.mocks.MockPerson;
 import br.com.rodrigo.vo.v1.PersonVO;
+import br.excpetions.RequiredObjectIsNullException;
 
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -42,7 +44,45 @@ class PersonServicesTest {
 
 	@Test
 	void testFindAll() {
-		fail("Not yet implemented");
+		List<Person> list = input.mockEntityList();
+
+		when(repository.findAll()).thenReturn(list);
+		
+		var people = service.findAll();
+		assertNotNull(people);
+		assertEquals(14, people.size());
+		var personOne = people.get(1);
+		
+		assertNotNull(personOne);
+		assertNotNull(personOne.getKey());
+		assertNotNull(personOne.getLinks());
+		assertTrue(personOne.toString().contains("links: [</person/1>;rel=\"self\"]"));
+		assertEquals("Addres Test1", personOne.getAddress());
+		assertEquals("First Name Test1", personOne.getFirstName());
+		assertEquals("Last Name Test1", personOne.getLastName());
+		assertEquals("Female", personOne.getGender());
+		
+		var personFour = people.get(4);
+		
+		assertNotNull(personFour);
+		assertNotNull(personFour.getKey());
+		assertNotNull(personFour.getLinks());
+		assertTrue(personFour.toString().contains("links: [</person/4>;rel=\"self\"]"));
+		assertEquals("Addres Test4", personFour.getAddress());
+		assertEquals("First Name Test4", personFour.getFirstName());
+		assertEquals("Last Name Test4", personFour.getLastName());
+		assertEquals("Male", personFour.getGender());
+		
+		var personSix = people.get(6);
+		
+		assertNotNull(personSix);
+		assertNotNull(personSix.getKey());
+		assertNotNull(personSix.getLinks());
+		assertTrue(personSix.toString().contains("links: [</person/6>;rel=\"self\"]"));
+		assertEquals("Addres Test6", personSix.getAddress());
+		assertEquals("First Name Test6", personSix.getFirstName());
+		assertEquals("Last Name Test6", personSix.getLastName());
+		assertEquals("Male", personSix.getGender());
 	}
 
 	@Test
@@ -75,6 +115,7 @@ class PersonServicesTest {
 
 	@Test
 	void testCreate() {
+		
 		Person entity = input.mockEntity(1);
 		Person persisted = entity;
 		
@@ -93,6 +134,17 @@ class PersonServicesTest {
 		assertEquals("First Name Test1", result.getFirstName());
 		assertEquals("Last Name Test1", result.getLastName());
 		assertEquals("Female", result.getGender());
+	}
+	
+	@Test
+	void testCreateWithNullPerson() {
+		Exception exception = assertThrows(RequiredObjectIsNullException.class, () -> {
+			service.Create(null);
+		});
+		
+		String expectedMessage = "It is not allowed to persist a null object";
+		String actualMessage = exception.getMessage();
+		assertTrue(actualMessage.contains(expectedMessage));
 	}
 
 	@Test
@@ -116,6 +168,17 @@ class PersonServicesTest {
 		assertEquals("First Name Test1", result.getFirstName());
 		assertEquals("Last Name Test1", result.getLastName());
 		assertEquals("Female", result.getGender());
+	}
+	
+	@Test
+	void testUpdateWithNullPerson() {
+		Exception exception = assertThrows(RequiredObjectIsNullException.class, () -> {
+			service.Update(null);
+		});
+		
+		String expectedMessage = "It is not allowed to persist a null object";
+		String actualMessage = exception.getMessage();
+		assertTrue(actualMessage.contains(expectedMessage));
 	}
 
 	@Test

@@ -14,6 +14,7 @@ import br.com.rodrigo.mapper.DozerMapper;
 import br.com.rodrigo.model.Person;
 import br.com.rodrigo.repositories.PersonRepository;
 import br.com.rodrigo.vo.v1.PersonVO;
+import br.excpetions.RequiredObjectIsNullException;
 import br.excpetions.ResourceNotFoundExcpetion;
 
 @Service
@@ -40,6 +41,7 @@ public class PersonServices {
 	}
 	
 	public PersonVO Create(PersonVO person) {
+		if(person == null) throw new RequiredObjectIsNullException();
 		logger.info("Creating one person!");
 		var entity = DozerMapper.parseObject(person, Person.class);
 		var vo = DozerMapper.parseObject(personRepository.save(entity), PersonVO.class);
@@ -49,6 +51,7 @@ public class PersonServices {
 
 	
 	public PersonVO Update(PersonVO person) {
+		if(person == null) throw new RequiredObjectIsNullException();
 		logger.info("Update one person!");
 		Person entity = personRepository.findById(person.getKey()).orElseThrow(()-> new ResourceNotFoundExcpetion("No records Found for this Id"));
 		entity.setFirstName(person.getFirstName());
