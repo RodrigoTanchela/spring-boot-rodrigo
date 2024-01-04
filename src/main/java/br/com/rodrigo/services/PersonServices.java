@@ -1,12 +1,17 @@
 package br.com.rodrigo.services;
 
 
-import java.util.List;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 import java.util.logging.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.stereotype.Service;
 
 import br.com.rodrigo.controller.PersonController;
@@ -16,6 +21,7 @@ import br.com.rodrigo.repositories.PersonRepository;
 import br.com.rodrigo.vo.v1.PersonVO;
 import br.excpetions.RequiredObjectIsNullException;
 import br.excpetions.ResourceNotFoundExcpetion;
+import jakarta.transaction.Transactional;
 
 @Service
 public class PersonServices {
@@ -24,11 +30,29 @@ public class PersonServices {
 	@Autowired
 	private PersonRepository personRepository;
 	
-	public List<PersonVO> findAll() {
+	@Autowired
+	PagedResourcesAssembler<PersonVO> assembler;
+	
+	public PagedModel<EntityModel<PersonVO>> findAll(Pageable pegeable) {
 		logger.info("Finding all people");
-		var persons =  DozerMapper.parseListObject(personRepository.findAll(), PersonVO.class);
-		persons.stream().forEach(p -> p.add(linkTo(methodOn(PersonController.class).findById(p.getKey())).withSelfRel()));
-		return persons;
+		var personPage = personRepository.findAll(pegeable);
+		
+		var personVosPage = personPage.map(p -> DozerMapper.parseObject(p, PersonVO.class));
+		personVosPage.map(p->p.add(linkTo(methodOn(PersonController.class).findById(p.getKey())).withSelfRel()));		
+		Link link = linkTo(methodOn(PersonController.class).findAll(pegeable.getPageNumber(), pegeable.getPageSize(), "asc")).withSelfRel();
+		
+		return assembler.toModel(personVosPage, link);
+	}
+	
+	public PagedModel<EntityModel<PersonVO>> findPersonByName(String firstName, Pageable pegeable) {
+		logger.info("Finding all people");
+		var personPage = personRepository.findPersonByName(firstName, pegeable);
+		
+		var personVosPage = personPage.map(p -> DozerMapper.parseObject(p, PersonVO.class));
+		personVosPage.map(p->p.add(linkTo(methodOn(PersonController.class).findById(p.getKey())).withSelfRel()));		
+		Link link = linkTo(methodOn(PersonController.class).findAll(pegeable.getPageNumber(), pegeable.getPageSize(), "asc")).withSelfRel();
+		
+		return assembler.toModel(personVosPage, link);
 	}
 
 	public PersonVO findById(Long id) {
@@ -61,6 +85,20 @@ public class PersonServices {
 		
 		var vo = DozerMapper.parseObject(personRepository.save(entity), PersonVO.class);
 		vo.add(linkTo(methodOn(PersonController.class).findById(vo.getKey())).withSelfRel());
+		return vo;
+	}
+	
+	@Transactional
+	public PersonVO disablePerson(Long id) {
+		
+		logger.info("Disabling one person!");
+		
+		personRepository.disablePerson(id);
+		
+		var entity = personRepository.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundExcpetion("No records found for this ID!"));
+		var vo = DozerMapper.parseObject(entity, PersonVO.class);
+		vo.add(linkTo(methodOn(PersonController.class).findById(id)).withSelfRel());
 		return vo;
 	}
 	
